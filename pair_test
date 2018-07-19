@@ -1,0 +1,68 @@
+require 'rspec'
+
+RSpec::Matchers.define :have_coauthor_of do |expected|
+  match do |actual|
+    actual[-2..-1] == ["", "Co-authored-by: #{expected}"]
+  end
+end
+
+RSpec.describe 'pair' do
+  before(:each) do
+    FileUtils.mkdir("./test_repo")
+    FileUtils.cd("./test_repo")
+    `git init .`
+    File.write("a_file", "here are some contents")
+    `git add .`
+    `git status`
+  end
+
+  after(:each) do
+    FileUtils.cd("..")
+    FileUtils.remove_dir("./test_repo", force=true)
+  end
+
+  context 'when there is no set pair' do
+    it 'prompts you to add a pair' do
+      output = `../pair commit -m 'this is my commit'`
+      expected = %q{Error: Set $PAIR to before running. Example: $ PAIR="example name <example@example.com>"}
+
+      expect(output.strip).to eq expected
+    end
+  end
+
+  context 'when there is a set pair' do
+    let(:coauthor) { "name <name@example.com>"} 
+
+    before(:each) do
+      ENV['PAIR'] = coauthor
+    end
+
+    after(:each) do
+      ENV.delete('PAIR')
+    end
+
+    context 'when specifying a commit message on the command line' do
+      it 'makes a commit with the pair as coauthor' do
+        `../pair commit -m 'this is my commit'`
+
+        expect(commit_message_lines.first.strip).to eq 'this is my commit'
+        expect(commit_message_lines).to have_coauthor_of coauthor
+      end
+
+      it 'allows multiple -m messages and includes the coauthor' do
+        `../pair commit -m 'this is my commit' -m 'it took a lot of effort'`
+
+        expect(commit_message_lines[0..1]).to eq ['this is my commit', 'it took a lot of effort']
+        expect(commit_message_lines).to have_coauthor_of coauthor
+      end
+    end
+
+    context 'when committing without a message on the command line'
+  end
+
+  context 'when there are multiple pairs'
+end
+
+def commit_message_lines
+  `git log --format=%B -n 1`.strip.lines.map(&:strip)
+end

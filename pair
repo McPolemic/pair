@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+require 'getoptlong'
+
+def need_pair!
+  puts %q{Error: Set $PAIR to before running. Example: $ PAIR="example name <example@example.com>"}
+  exit
+end
+
+def usage_and_exit
+  puts <<-EOF
+    pair commit [OPTION]
+
+    -h, --help:
+       show help
+
+    -m msg, --message msg:
+        commit with the given message
+  EOF
+  exit
+end
+
+subcommand = ARGV.shift
+raise "unsupported operation: #{subcommand}" unless subcommand == "commit"
+
+messages = []
+pair = ENV["PAIR"]
+need_pair! unless pair
+
+opts = GetoptLong.new(
+  ['--help', '-h', GetoptLong::NO_ARGUMENT],
+  ['--message', '-m', GetoptLong::REQUIRED_ARGUMENT]
+)
+
+opts.each do |opt, argument|
+  case opt
+  when '--help'
+    usage_and_exit
+  when '--message'
+    messages += [argument]
+  else
+    raise "Unsupported option? #{opt} #{argument}"
+  end
+end
+
+`git commit -m '#{messages.join("\n")}' -m '
+
+Co-authored-by: #{pair}'`
