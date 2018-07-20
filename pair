@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 require 'getoptlong'
+require 'tempfile'
 
-def need_pair!
-  puts %q{Error: Set $PAIR to before running. Example: $ PAIR="example name <example@example.com>"}
+def need_pairs!
+  puts %q{Error: Set $PAIR before running. Example: $ PAIR="example name <example@example.com>"}
   exit
 end
 
@@ -19,29 +20,38 @@ def usage_and_exit
   exit
 end
 
+def message_specified?
+  ARGV.include?('-m') || ARGV.include?('--message')
+end
+
+def message_flags(pairs)
+  pairs.map do |pair|
+    ["-m", "Co-authored-by: #{pair}"]
+  end.flatten
+end
+
+def template_file(pairs)
+  file = Tempfile.new('git_template')
+  file.write("\n")
+
+  pairs.each do |pair|
+    file.write("Co-authored-by: #{pair}\n")
+  end
+
+  file.rewind
+  file.path
+end
+
 subcommand = ARGV.shift
 raise "unsupported operation: #{subcommand}" unless subcommand == "commit"
 
-messages = []
-pair = ENV["PAIR"]
-need_pair! unless pair
+pairs = ENV.fetch("PAIR", "").split(",")
+need_pairs! if pairs.empty?
 
-opts = GetoptLong.new(
-  ['--help', '-h', GetoptLong::NO_ARGUMENT],
-  ['--message', '-m', GetoptLong::REQUIRED_ARGUMENT]
-)
+args = if message_specified?
+         ARGV + message_flags(pairs)
+       else
+         ARGV + ['-t', template_file(pairs)]
+       end
 
-opts.each do |opt, argument|
-  case opt
-  when '--help'
-    usage_and_exit
-  when '--message'
-    messages += [argument]
-  else
-    raise "Unsupported option? #{opt} #{argument}"
-  end
-end
-
-`git commit -m '#{messages.join("\n")}' -m '
-
-Co-authored-by: #{pair}'`
+puts IO.popen(['git', 'commit'] + args).read
