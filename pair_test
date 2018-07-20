@@ -73,7 +73,16 @@ RSpec.describe 'Running pair' do
     end
 
     context 'when specifying a template for a commit on the command line' do
-      it 'adds the coauthor to the template'
+      it 'adds the coauthor to the template' do
+        File.write("template_file", "This is my commit")
+
+        run("../pair commit -t template_file")
+
+        expect(template_message_lines.first).to eq "This is my commit"
+
+        expect(template_message_lines).to have_coauthor coauthor
+      end
+
     end
 
     context 'when committing without a message on the command line' do
@@ -118,6 +127,28 @@ RSpec.describe 'Running pair' do
 
     context 'when specifying a template for a commit on the command line' do
       it 'adds the coauthor to the template' do
+        File.write("template_file", "This is my commit")
+
+        run("../pair commit -t template_file")
+
+        expect(template_message_lines.first).to eq "This is my commit"
+
+        coauthors.each do |coauthor|
+          expect(template_message_lines).to include "Co-authored-by: #{coauthor}"
+        end
+      end
+
+      it 'adds the coauthor to the template with an equals sign' do
+        pending
+        File.write("template_file", "This is my commit")
+
+        run("../pair commit --template=template_file")
+
+        expect(template_message_lines.first).to eq "This is my commit"
+
+        coauthors.each do |coauthor|
+          expect(template_message_lines).to include "Co-authored-by: #{coauthor}"
+        end
       end
     end
 

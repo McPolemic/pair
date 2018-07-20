@@ -24,15 +24,43 @@ def message_specified?
   ARGV.include?('-m') || ARGV.include?('--message')
 end
 
+def template_specified?
+  ARGV.include?('-t') || ARGV.include?('--template')
+end
+
 def message_flags(pairs)
   pairs.map do |pair|
     ["-m", "Co-authored-by: #{pair}"]
   end.flatten
 end
 
+def template_index
+  ARGV.rindex("-t") || ARGV.rindex("--template")
+end
+
+def provided_template_file
+  template_file_index = template_index + 1
+  ARGV[template_file_index]
+end
+
+def overwrite_template_file(pairs)
+  file = Tempfile.new('git_template')
+  input = File.read(provided_template_file)
+
+  file.write(input)
+  file.write("\n\n")
+
+  pairs.each do |pair|
+    file.write("Co-authored-by: #{pair}\n")
+  end
+
+  file.rewind
+  file.path
+end
+
 def template_file(pairs)
   file = Tempfile.new('git_template')
-  file.write("\n")
+  file.write("\n\n")
 
   pairs.each do |pair|
     file.write("Co-authored-by: #{pair}\n")
@@ -50,6 +78,8 @@ need_pairs! if pairs.empty?
 
 args = if message_specified?
          ARGV + message_flags(pairs)
+       elsif template_specified?
+         ARGV + ['-t', overwrite_template_file(pairs)]
        else
          ARGV + ['-t', template_file(pairs)]
        end
