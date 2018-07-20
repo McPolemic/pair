@@ -25,17 +25,17 @@ def message_specified?
 end
 
 def template_specified?
-  ARGV.include?('-t') || ARGV.include?('--template')
+  !template_index.nil?
+end
+
+def template_index
+  ARGV.rindex("-t") || ARGV.rindex("--template")
 end
 
 def message_flags(pairs)
   pairs.map do |pair|
     ["-m", "Co-authored-by: #{pair}"]
   end.flatten
-end
-
-def template_index
-  ARGV.rindex("-t") || ARGV.rindex("--template")
 end
 
 def provided_template_file

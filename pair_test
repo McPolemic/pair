@@ -41,60 +41,7 @@ RSpec.describe 'Running pair' do
     end
   end
 
-  context 'when there is a set pair' do
-    let(:coauthor) { "name <name@example.com>"}
-
-    before(:each) do
-      ENV['PAIR'] = coauthor
-    end
-
-    after(:each) do
-      ENV.delete('PAIR')
-    end
-
-    context 'when specifying a commit message on the command line' do
-      it 'makes a commit with the pair as coauthor' do
-        run("../pair commit -m 'this is my commit'")
-
-        expect(commit_message_lines.first.strip).to eq 'this is my commit'
-        expect(commit_message_lines).to have_coauthor coauthor
-      end
-
-      it 'allows multiple -m messages and includes the coauthor' do
-        run("../pair commit -m 'this is my commit' -m 'it took a lot of effort'")
-
-        expect(commit_message_lines[0..2]).to eq ['this is my commit', '', 'it took a lot of effort']
-        expect(commit_message_lines).to have_coauthor coauthor
-      end
-    end
-
-    context 'when specifying a file for a commit on the command line' do
-      it 'adds the coauthor to the template'
-    end
-
-    context 'when specifying a template for a commit on the command line' do
-      it 'adds the coauthor to the template' do
-        File.write("template_file", "This is my commit")
-
-        run("../pair commit -t template_file")
-
-        expect(template_message_lines.first).to eq "This is my commit"
-
-        expect(template_message_lines).to have_coauthor coauthor
-      end
-
-    end
-
-    context 'when committing without a message on the command line' do
-      it 'makes a commit with the pair as coauthor' do
-        run("../pair commit")
-
-        expect(template_message_lines).to include "Co-authored-by: #{coauthor}"
-      end
-    end
-  end
-
-  context 'when there are multiple pairs' do
+  context 'when there are one or more pairs' do
     let(:coauthors) { ["name <name@example.com>", "other name <other_name@example.com>"] }
 
     before(:each) do
@@ -122,7 +69,35 @@ RSpec.describe 'Running pair' do
     end
 
     context 'when specifying a file for a commit on the command line' do
-      it 'adds the coauthor to the template'
+      it 'adds the coauthor to the commit' do
+        pending
+
+        File.write("commit_message_file", "This is my commit")
+
+        run("../pair commit -F commit_message_file")
+
+        expect(commit_message_lines.first).to eq "This is my commit"
+
+        coauthors.each do |coauthor|
+          expect(commit_message_lines).to include "Co-authored-by: #{coauthor}"
+        end
+      end
+
+      context 'when using --file=file' do
+        it 'adds the coauthor to the commit' do
+          pending
+
+          File.write("commit_message_file", "This is my commit")
+
+          run("../pair commit -F commit_message_file")
+
+          expect(commit_message_lines.first).to eq "This is my commit"
+
+          coauthors.each do |coauthor|
+            expect(commit_message_lines).to include "Co-authored-by: #{coauthor}"
+          end
+        end
+      end
     end
 
     context 'when specifying a template for a commit on the command line' do
@@ -138,16 +113,18 @@ RSpec.describe 'Running pair' do
         end
       end
 
-      it 'adds the coauthor to the template with an equals sign' do
-        pending
-        File.write("template_file", "This is my commit")
+      context 'when using --template=template' do
+        it 'adds the coauthor to the template with an equals sign' do
+          pending
+          File.write("template_file", "This is my commit")
 
-        run("../pair commit --template=template_file")
+          run("../pair commit --template=template_file")
 
-        expect(template_message_lines.first).to eq "This is my commit"
+          expect(template_message_lines.first).to eq "This is my commit"
 
-        coauthors.each do |coauthor|
-          expect(template_message_lines).to include "Co-authored-by: #{coauthor}"
+          coauthors.each do |coauthor|
+            expect(template_message_lines).to include "Co-authored-by: #{coauthor}"
+          end
         end
       end
     end
