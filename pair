@@ -70,18 +70,23 @@ def template_file(pairs)
   file.path
 end
 
-subcommand = ARGV.shift
-raise "unsupported operation: #{subcommand}" unless subcommand == "commit"
+def main
+  subcommand = ARGV.shift
+  usage_and_exit unless subcommand == "commit"
 
-pairs = ENV.fetch("PAIR", "").split(",")
-need_pairs! if pairs.empty?
+  pairs = ENV.fetch("PAIR", "").split(",")
+  need_pairs! if pairs.empty?
 
-args = if message_specified?
-         ARGV + message_flags(pairs)
-       elsif template_specified?
-         ARGV + ['-t', overwrite_template_file(pairs)]
-       else
-         ARGV + ['-t', template_file(pairs)]
-       end
+  args = if message_specified?
+           ARGV + message_flags(pairs)
+         elsif template_specified?
+           ARGV + ['-t', overwrite_template_file(pairs)]
+         else
+           ARGV + ['-t', template_file(pairs)]
+         end
 
-puts IO.popen(['git', 'commit'] + args).read
+  puts IO.popen(['git', 'commit'] + args).read
+end
+
+
+main if __FILE__ == $0
