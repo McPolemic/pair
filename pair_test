@@ -1,3 +1,4 @@
+require 'fileutils'
 require 'rspec'
 
 RSpec::Matchers.define :have_coauthor do |expected|
