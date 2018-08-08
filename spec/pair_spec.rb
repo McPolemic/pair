@@ -33,6 +33,14 @@ RSpec.describe 'Running pair' do
     FileUtils.remove_dir("./test_repo", force=true)
   end
 
+  context 'without any other arguments' do
+    it 'shows usage and exits' do
+      output = run("pair")
+
+      expect(output.strip).to include "--help"
+    end
+  end
+
   context 'when there is no set pair' do
     it 'prompts you to add a pair' do
       output = run("pair commit -m 'this is my commit'")
