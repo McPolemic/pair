@@ -79,8 +79,6 @@ RSpec.describe 'Running pair' do
 
     context 'when specifying a file for a commit on the command line' do
       it 'adds the coauthor to the commit' do
-        pending
-
         File.write("commit_message_file", "This is my commit")
 
         run("pair commit -F commit_message_file")
@@ -94,8 +92,6 @@ RSpec.describe 'Running pair' do
 
       context 'when using --file=file' do
         it 'adds the coauthor to the commit' do
-          pending
-
           File.write("commit_message_file", "This is my commit")
 
           run("pair commit -F commit_message_file")

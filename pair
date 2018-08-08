@@ -11,6 +11,8 @@ def usage_and_exit
   puts <<-EOF
     pair commit [OPTION]
 
+    Adds pairing information when creating git commits
+
     -h, --help:
        show help
 
@@ -19,6 +21,9 @@ def usage_and_exit
 
     -t template_file, --template template_file:
         load the given template_file into an editor and commit with that message
+
+    -F commit_message_file, --file commit_message_file:
+        use the contents of commit_message_file as the commit message
   EOF
   exit
 end
@@ -36,6 +41,24 @@ end
 def template_index
   ARGV.rindex do |arg|
     arg.start_with?("-t") || arg.start_with?("--template")
+  end
+end
+
+def message_index
+  ARGV.rindex do |arg|
+    arg.start_with?("-F") || arg.start_with?("--file")
+  end
+end
+
+def message_file_specified?
+  !message_file_index.nil?
+end
+
+# Look for a '-F' or '--file' flag. We use start_with? to search for
+# arguments like --file=<file>
+def message_file_index
+  ARGV.rindex do |arg|
+    arg.start_with?("-F") || arg.start_with?("--file")
   end
 end
 
@@ -60,9 +83,32 @@ def provided_template_file
   end
 end
 
+# Load the template file argument. It can be in the forms
+# -F <template_file>
+# -F=<template_file>
+# --file <template_file>
+# --file=<template_file>
+def provided_message_file
+  message_flag = ARGV[message_index]
+
+  if message_flag.include? "="
+    message_flag.split("=", 2).last
+  else
+    ARGV[message_index + 1]
+  end
+end
+
 def overwrite_template_file(pairs)
   file = Tempfile.new('git_template')
   input = File.read(provided_template_file)
+
+  file.write(input)
+  add_pairs_to_file(pairs, file)
+end
+
+def overwrite_message_file(pairs)
+  file = Tempfile.new('git_commit_message')
+  input = File.read(provided_message_file)
 
   file.write(input)
   add_pairs_to_file(pairs, file)
@@ -95,6 +141,8 @@ def main
            ARGV + message_flags(pairs)
          elsif template_specified?
            ARGV + ['-t', overwrite_template_file(pairs)]
+         elsif message_file_specified?
+           ARGV + ['-F', overwrite_message_file(pairs)]
          else
            ARGV + ['-t', template_file(pairs)]
          end
