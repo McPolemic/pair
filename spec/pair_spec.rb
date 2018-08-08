@@ -44,9 +44,8 @@ RSpec.describe 'Running pair' do
   context 'when there is no set pair' do
     it 'prompts you to add a pair' do
       output = run("pair commit -m 'this is my commit'")
-      expected = %q{Error: Set $PAIR before running. Example: $ PAIR="example name <example@example.com>"}
 
-      expect(output.strip).to eq expected
+      expect(output.strip).to include "Error: Set $PAIR before running"
     end
   end
 

@@ -3,26 +3,31 @@ require 'getoptlong'
 require 'tempfile'
 
 def need_pairs!
-  puts %q{Error: Set $PAIR before running. Example: $ PAIR="example name <example@example.com>"}
+  puts <<~EOF
+    Error: Set $PAIR before running.
+
+    Example:
+        $ export PAIR="example name <example@example.com>"
+  EOF
   exit
 end
 
 def usage_and_exit
-  puts <<-EOF
+  puts <<~EOF
     pair commit [OPTION]
 
     Adds pairing information when creating git commits
 
-    -h, --help:
+    -h, --help
        show help
 
-    -m msg, --message msg:
+    -m msg, --message msg
         commit with the given message
 
-    -t template_file, --template template_file:
+    -t template_file, --template template_file
         load the given template_file into an editor and commit with that message
 
-    -F commit_message_file, --file commit_message_file:
+    -F commit_message_file, --file commit_message_file
         use the contents of commit_message_file as the commit message
   EOF
   exit
