@@ -16,6 +16,9 @@ def usage_and_exit
 
     -m msg, --message msg:
         commit with the given message
+
+    -t template_file, --template template_file:
+        load the given template_file into an editor and commit with that message
   EOF
   exit
 end
@@ -28,8 +31,12 @@ def template_specified?
   !template_index.nil?
 end
 
+# Look for a '-t' or '--template' flag. We use start_with? to search for
+# arguments like --template=<file>
 def template_index
-  ARGV.rindex("-t") || ARGV.rindex("--template")
+  ARGV.rindex do |arg|
+    arg.start_with?("-t") || arg.start_with?("--template")
+  end
 end
 
 def message_flags(pairs)
@@ -38,9 +45,19 @@ def message_flags(pairs)
   end.flatten
 end
 
+# Load the template file argument. It can be in the forms
+# -t <template_file>
+# -t=<template_file>
+# --template <template_file>
+# --template=<template_file>
 def provided_template_file
-  template_file_index = template_index + 1
-  ARGV[template_file_index]
+  template_flag = ARGV[template_index]
+
+  if template_flag.include? "="
+    template_flag.split("=", 2).last
+  else
+    ARGV[template_index + 1]
+  end
 end
 
 def overwrite_template_file(pairs)
@@ -48,18 +65,15 @@ def overwrite_template_file(pairs)
   input = File.read(provided_template_file)
 
   file.write(input)
-  file.write("\n\n")
-
-  pairs.each do |pair|
-    file.write("Co-authored-by: #{pair}\n")
-  end
-
-  file.rewind
-  file.path
+  add_pairs_to_file(pairs, file)
 end
 
 def template_file(pairs)
   file = Tempfile.new('git_template')
+  add_pairs_to_file(pairs, file)
+end
+
+def add_pairs_to_file(pairs, file)
   file.write("\n\n")
 
   pairs.each do |pair|

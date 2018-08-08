@@ -124,7 +124,6 @@ RSpec.describe 'Running pair' do
 
       context 'when using --template=template' do
         it 'adds the coauthor to the template with an equals sign' do
-          pending
           File.write("template_file", "This is my commit")
 
           run("pair commit --template=template_file")
