@@ -38,33 +38,36 @@ def message_specified?
 end
 
 def template_specified?
-  !template_index.nil?
+  template_index != nil
+end
+
+def message_file_specified?
+  message_file_index != nil
 end
 
 # Look for a '-t' or '--template' flag. We use start_with? to search for
 # arguments like --template=<file>
 def template_index
-  ARGV.rindex do |arg|
-    arg.start_with?("-t") || arg.start_with?("--template")
-  end
-end
-
-def message_index
-  ARGV.rindex do |arg|
-    arg.start_with?("-F") || arg.start_with?("--file")
-  end
-end
-
-def message_file_specified?
-  !message_file_index.nil?
+  find_index_for_flags("-t", "--template")
 end
 
 # Look for a '-F' or '--file' flag. We use start_with? to search for
 # arguments like --file=<file>
 def message_file_index
-  ARGV.rindex do |arg|
-    arg.start_with?("-F") || arg.start_with?("--file")
-  end
+  find_index_for_flags("-F", "--file")
+end
+
+# Search for all given flags and return the highest (last) index
+# Example:
+#   ARGV=["-t" "template_file" "--template=overwriting_template_file", "other_arg"]
+#
+#   find_index_for_flags("-t", "--template") # => 2
+def find_index_for_flags(*flags)
+  flags.map do |flag|
+    ARGV.rindex do |arg|
+      arg.start_with?(flag)
+    end
+  end.compact.max
 end
 
 def message_flags(pairs)
@@ -73,53 +76,42 @@ def message_flags(pairs)
   end.flatten
 end
 
-# Load the template file argument. It can be in the forms
-# -t <template_file>
-# -t=<template_file>
-# --template <template_file>
-# --template=<template_file>
-def provided_template_file
-  template_flag = ARGV[template_index]
+# Find a file argument when given an argument:
+# Use what comes after an equals sign if it's present (e.g. --template=my_template_file)
+# Otherwise, use the next argument (e.g. --file my_commit_file)
+def provided_file_for_flag_index(flag_index)
+  flag = ARGV[flag_index]
 
-  if template_flag.include? "="
-    template_flag.split("=", 2).last
+  if flag.include? "="
+    flag.split("=", 2).last
   else
-    ARGV[template_index + 1]
+    ARGV[flag_index + 1]
   end
 end
 
-# Load the template file argument. It can be in the forms
-# -F <template_file>
-# -F=<template_file>
-# --file <template_file>
-# --file=<template_file>
-def provided_message_file
-  message_flag = ARGV[message_index]
-
-  if message_flag.include? "="
-    message_flag.split("=", 2).last
-  else
-    ARGV[message_index + 1]
-  end
-end
-
+# Create a new temp file that is the original template file passed in, adding
+# pair information
 def overwrite_template_file(pairs)
-  file = Tempfile.new('git_template')
-  input = File.read(provided_template_file)
-
-  file.write(input)
-  add_pairs_to_file(pairs, file)
+  source_file = provided_file_for_flag_index(template_index)
+  new_file_with_pair_info(pairs, source_file)
 end
 
+# Create a new temp file that is the original commit message file passed in,
+# adding pair information
 def overwrite_message_file(pairs)
-  file = Tempfile.new('git_commit_message')
-  input = File.read(provided_message_file)
+  source_file = provided_file_for_flag_index(message_file_index)
+  new_file_with_pair_info(pairs, source_file)
+end
+
+def new_file_with_pair_info(pairs, source_file_path)
+  file = Tempfile.new('pair_file')
+  input = File.read(source_file_path)
 
   file.write(input)
   add_pairs_to_file(pairs, file)
 end
 
-def template_file(pairs)
+def paired_template_file(pairs)
   file = Tempfile.new('git_template')
   add_pairs_to_file(pairs, file)
 end
@@ -149,7 +141,7 @@ def main
          elsif message_file_specified?
            ARGV + ['-F', overwrite_message_file(pairs)]
          else
-           ARGV + ['-t', template_file(pairs)]
+           ARGV + ['-t', paired_template_file(pairs)]
          end
 
   puts IO.popen(['git', 'commit'] + args).read
