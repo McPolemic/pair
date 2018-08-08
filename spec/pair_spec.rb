@@ -35,7 +35,7 @@ RSpec.describe 'Running pair' do
 
   context 'when there is no set pair' do
     it 'prompts you to add a pair' do
-      output = run("../pair commit -m 'this is my commit'")
+      output = run("pair commit -m 'this is my commit'")
       expected = %q{Error: Set $PAIR before running. Example: $ PAIR="example name <example@example.com>"}
 
       expect(output.strip).to eq expected
@@ -55,14 +55,14 @@ RSpec.describe 'Running pair' do
 
     context 'when specifying a commit message on the command line' do
       it 'makes a commit with the pair as coauthor' do
-        run("../pair commit -m 'this is my commit'")
+        run("pair commit -m 'this is my commit'")
 
         expect(commit_message_lines.first.strip).to eq 'this is my commit'
         expect(commit_message_lines).to have_coauthor coauthors
       end
 
       it 'allows multiple -m messages and includes the coauthor' do
-        run("../pair commit -m 'this is my commit' -m 'it took a lot of effort'")
+        run("pair commit -m 'this is my commit' -m 'it took a lot of effort'")
 
         expect(commit_message_lines[0..2]).to eq ['this is my commit', '', 'it took a lot of effort']
         expect(commit_message_lines).to have_coauthor coauthors
@@ -75,7 +75,7 @@ RSpec.describe 'Running pair' do
 
         File.write("commit_message_file", "This is my commit")
 
-        run("../pair commit -F commit_message_file")
+        run("pair commit -F commit_message_file")
 
         expect(commit_message_lines.first).to eq "This is my commit"
 
@@ -90,7 +90,7 @@ RSpec.describe 'Running pair' do
 
           File.write("commit_message_file", "This is my commit")
 
-          run("../pair commit -F commit_message_file")
+          run("pair commit -F commit_message_file")
 
           expect(commit_message_lines.first).to eq "This is my commit"
 
@@ -105,7 +105,7 @@ RSpec.describe 'Running pair' do
       it 'adds the coauthor to the template' do
         File.write("template_file", "This is my commit")
 
-        run("../pair commit -t template_file")
+        run("pair commit -t template_file")
 
         expect(template_message_lines.first).to eq "This is my commit"
 
@@ -119,7 +119,7 @@ RSpec.describe 'Running pair' do
           pending
           File.write("template_file", "This is my commit")
 
-          run("../pair commit --template=template_file")
+          run("pair commit --template=template_file")
 
           expect(template_message_lines.first).to eq "This is my commit"
 
@@ -132,7 +132,7 @@ RSpec.describe 'Running pair' do
 
     context 'when committing without a message on the command line' do
       it 'makes a commit with the pair as coauthor' do
-        run("../pair commit")
+        run("pair commit")
 
         coauthors.each do |coauthor|
           expect(template_message_lines).to include "Co-authored-by: #{coauthor}"
@@ -158,5 +158,9 @@ end
 # Run a given command (either a string or array) with stderr merged to stdout.
 # Returns the output of the command
 def run(command)
-  IO.popen(command, :err=>[:child, :out]).read
+  path = ENV['PATH']
+  pair_path = File.absolute_path(File.join(__dir__, ".."))
+  env = { "PATH" => [pair_path, path].join(":") }
+
+  IO.popen(env, command, :err=>[:child, :out]).read
 end
